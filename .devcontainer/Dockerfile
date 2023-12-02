@@ -16,6 +16,7 @@ RUN apt-get update \
         debian-archive-keyring \
         git \
         gnupg \
+        locales \
         software-properties-common \
         sudo \
         tzdata \
@@ -67,6 +68,9 @@ ENV HOME /home/$USERNAME
 RUN curl https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh | bash - \
     && sed -i 's/robbyrussell/kennethreitz/g' ~/.zshrc \
     && echo 'export PATH=$PATH:$HOME/.local/bin' >>~/.zshrc
+
+# Set Locale for Functional Autocompletion in zsh
+RUN sudo locale-gen en_US.UTF-8
 
 # Install Python requirements.txt
 COPY requirements.txt /workspace/requirements.txt
