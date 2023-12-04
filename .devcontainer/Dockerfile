@@ -42,7 +42,8 @@ RUN add-apt-repository ppa:deadsnakes/ppa \
 
 # Update PIP for 3.12 / Ubuntu compatibility (https://ubuntuhandbook.org/index.php/2023/10/fix-broken-pip-python-312-ubuntu/)
 RUN wget -O /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
-    python3 /tmp/get-pip.py
+    python3 /tmp/get-pip.py && \
+    rm /tmp/get-pip.py
 
 # Use a non-root user per https://code.visualstudio.com/remote/advancedcontainers/add-nonroot-user
 ARG USERNAME=vscode
@@ -71,6 +72,18 @@ RUN curl https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.
 
 # Set Locale for Functional Autocompletion in zsh
 RUN sudo locale-gen en_US.UTF-8
+
+# Add `oc` OpenShift Client
+RUN arch="$(arch)"; \
+    case "$arch" in \
+        x86_64) export TARGET='' ;; \
+        aarch64) export TARGET='arm64-' ;; \
+    esac; \
+    wget -O /tmp/oc.tgz "https://github.com/okd-project/okd/releases/download/4.14.0-0.okd-2023-12-01-225814/openshift-client-linux-${TARGET}4.14.0-0.okd-2023-12-01-225814.tar.gz" && \
+    cd /tmp && \
+    tar -xvzf oc.tgz && \
+    sudo mv oc /usr/bin/oc && \
+    rm kubectl oc.tgz README.md
 
 # Install Python requirements.txt
 COPY requirements.txt /workspace/requirements.txt
