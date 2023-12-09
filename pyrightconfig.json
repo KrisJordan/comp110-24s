@@ -1,0 +1,10 @@
+{
+    "include": ".",
+    "exclude": [
+        "**/__pycache__",
+    ],
+    "reportMissingImports": true,
+    "reportMissingTypeStubs": false,
+    "reportUnknownMemberType": false,
+    "pythonVersion": "3.12",
+}
