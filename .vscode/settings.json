@@ -11,5 +11,11 @@
         "**/Thumbs.db": true,
         "**/__pycache__": true,
         "**/.pytest_cache": true,
+        "**/.vscode": true,
+        "**/.devcontainer": true,
+        "**/.flake8": true,
+        "**/.gitignore": true,
+        "**/pyrightconfig.json": true,
+        "**/requirements.txt": true,
     }
 }
