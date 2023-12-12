@@ -6,5 +6,8 @@
     "reportMissingImports": true,
     "reportMissingTypeStubs": false,
     "reportUnknownMemberType": false,
+    "reportUnusedVariable": "warning",
+    "reportUnusedExpression": "warning",
+    "reportUnusedImport": "warning",
     "pythonVersion": "3.12",
 }
