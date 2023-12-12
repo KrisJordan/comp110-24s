@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Module Tree</title>
+</head>
+
+<body>
+    <h1>Package: {{ package.name }}</h1>
+    <ul>
+        {% for child in package.children %}
+        <li>
+            {% if child.__class__.__name__ == 'Package' %}
+            <a href="{{ request.url.path }}{{ child.name }}">{{ child.name }}/</a>
+            {% else %}
+            <a href="{{ request.url.path }}/{{ child.name }}.py">{{ child.name }}.py</a>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html>

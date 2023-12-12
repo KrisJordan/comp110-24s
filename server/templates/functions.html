@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Module Functions</title>
+</head>
+
+<body>
+    <h1>Module: {{ module_name }}</h1>
+    <h2>Functions:</h2>
+    <ul>
+        {% for function in function_defs %}
+        <li>{{ function.name }}</li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html>
