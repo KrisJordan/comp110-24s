@@ -14,6 +14,7 @@ function WebSocketContainer({ ...props }) {
         let ws = new WebSocket("ws://localhost:8000/ws");
         ws.onopen = () => {
             setWebSocketOpen(true);
+            ws.send(JSON.stringify({ "type": "LS", "data": { "path": "/" } }));
         };
 
         ws.onmessage = (message) => {

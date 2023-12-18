@@ -1,21 +1,29 @@
+from typing import Callable, Coroutine
 from fastapi import WebSocket
 
 from .web_socket_event import WebSocketEvent
 
 
 class WebSocketManager:
-    def __init__(self):
+    def __init__(
+        self,
+        receive_handler: Callable[
+            [WebSocket, WebSocketEvent], Coroutine[None, None, None]
+        ],
+    ):
         self._clients: set[WebSocket] = set()
+        self._receive_handler = receive_handler
 
     async def accept(self, client: WebSocket):
         await client.accept()
         self.add(client)
-        # TODO: Think through receiving end...
         try:
             while True:
                 data = await client.receive_text()
-                print(data)
-        except Exception:
+                event = WebSocketEvent.model_validate_json(data)
+                await self._receive_handler(client, event)
+        except Exception as e:
+            print(e)
             pass
         finally:
             self.remove(client)
