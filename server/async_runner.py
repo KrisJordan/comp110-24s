@@ -19,6 +19,7 @@ class AsyncRunner:
             stderr=asyncio.subprocess.PIPE,
         )
         self._pipe_stdout_task = asyncio.create_task(self.pipe_stdout())
+        self._pipe_stderr_task = asyncio.create_task(self.pipe_stderr())
         self._await_exit = asyncio.create_task(self.await_exit())
         return self._process.pid
 
@@ -36,6 +37,23 @@ class AsyncRunner:
                     ).model_dump_json()
                 )
                 break
+
+    async def pipe_stderr(self) -> None:
+        while True:
+            if self._process.returncode is not None:
+                break
+
+            output = await self._process.stderr.readline()  # type: ignore
+
+            if output == b"":
+                break
+
+            if output:
+                await self._client.send_text(
+                    WebSocketEvent(
+                        type="STDERR", data={"pid": self._process.pid, "err": output}
+                    ).model_dump_json()
+                )
 
     async def pipe_stdout(self) -> None:
         while True:
