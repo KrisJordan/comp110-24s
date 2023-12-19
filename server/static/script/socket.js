@@ -15,6 +15,7 @@ function WebSocketContainer({ ...props }) {
         ws.onopen = () => {
             setWebSocketOpen(true);
             ws.send(JSON.stringify({ "type": "LS", "data": { "path": "/" } }));
+            ws.send(JSON.stringify({ "type": "RUN", "data": { "module": "hello" } }));
         };
 
         ws.onmessage = (message) => {
