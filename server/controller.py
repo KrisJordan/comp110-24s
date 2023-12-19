@@ -4,18 +4,15 @@ from server.web_socket_event import WebSocketEvent
 
 
 async def web_socket_controller(client: WebSocket, event: WebSocketEvent):
-    print(event)
+    response: WebSocketEvent
     match event.type:
         case "LS":
-            # Use async file system command to get list of files in cwd
-
             files = await list_files_async(".")
-            await client.send_text(
-                WebSocketEvent(type="LS", data={"files": files}).model_dump_json()
-            )
+            response = WebSocketEvent(type="LS", data={"files": files})
+        case _:
+            response = WebSocketEvent(type="??", data={})
 
-        case default:
-            print(default)
+    await client.send_text(response.model_dump_json())
 
 
 async def list_files_async(directory: str):
