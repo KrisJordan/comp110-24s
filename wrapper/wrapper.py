@@ -49,7 +49,6 @@ class Wrapper:
             "-Xfrozen_modules=off",
             "-m",
             "debugpy",
-            "--wait-for-client",
             "--listen",
             "localhost:5678",
             "-c",
