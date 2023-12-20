@@ -17,6 +17,16 @@
             "request": "launch",
             "module": "comp110",
             "justMyCode": true
+        },
+        {
+            "name": "Python Remote",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "127.0.0.1",
+                "port": 5678
+            },
+            "justMyCode": true
         }
     ]
 }
