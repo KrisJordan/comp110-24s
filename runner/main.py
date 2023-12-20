@@ -1,11 +1,11 @@
 import asyncio
-from .wrapper import Wrapper
+from .runner import Runner
 
 
 async def main():
-    wrapper = Wrapper()
+    runner = Runner()
 
-    await wrapper.run_standard_module(
+    await runner.run_standard_module(
         input(
             "Enter the name of the module you'd like to run relative to /workspace: "
         ),

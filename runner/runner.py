@@ -2,7 +2,7 @@ import asyncio
 from typing import Any
 
 
-class Wrapper:
+class Runner:
     _is_running: bool
     _last_input: str
     _input_server: asyncio.Server | None
@@ -39,7 +39,7 @@ class Wrapper:
 
             injected_code += f"result = {module}.{function}({stringified_args})\n"
 
-        with open("/workspace/wrapper/template/standard.py") as template_file:
+        with open("/workspace/runner/wrappers/standard.py") as template_file:
             template = template_file.read()
 
         template = template.replace("IMPORT_HERE", injected_code)
