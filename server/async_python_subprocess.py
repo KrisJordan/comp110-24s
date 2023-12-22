@@ -143,7 +143,7 @@ class AsyncPythonSubprocess:
                     self._stderr_pipe_task,
                 )
                 if self.client_connected():
-                    await self._client.send_text(f"Exit: {self._process.returncode}")
+                    await self._client.send_text(WebSocketEvent(type="EXIT", data={"pid": self._process.pid, "returncode": self._process.returncode}).model_dump_json())
                 break
 
             await asyncio.sleep(1)
