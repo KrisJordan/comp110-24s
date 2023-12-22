@@ -5,28 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Project 01",
+            "name": "COMP110 Runner",
             "type": "python",
             "request": "launch",
-            "module": "enter-your-module-name",
-            "justMyCode": true
-        },
-        {
-            "name": "Project 02",
-            "type": "python",
-            "request": "launch",
-            "module": "comp110",
-            "justMyCode": true
-        },
-        {
-            "name": "Python Remote",
-            "type": "python",
-            "request": "attach",
-            "connect": {
-                "host": "127.0.0.1",
-                "port": 5678
-            },
-            "justMyCode": true
+            "module": "server",
+            "subProcess": true,
+            "justMyCode": true,
+            "cwd": "/workspace"
         }
     ]
 }

@@ -1,3 +1,18 @@
+"""FileObserver watches the file system for changes and makes asyncio callbacks.
+
+It specifically is looking for changes to .py files and ignores directory changes
+to some common project directories we can ignore (e.g. __pycache__, .pytest_cache, .git)
+
+It uses a TTLCache to prevent duplicate events within half a second of each other.
+
+Because watchdog is not asyncio compatible, we run it in a separate thread and
+use run_coroutine_threadsafe to call the callback.
+"""
+
+__author__ = "Kris Jordan <kris@cs.unc.edu>"
+__copyright__ = "Copyright 2023"
+__license__ = "MIT"
+
 import re
 import asyncio
 import cachetools
@@ -12,6 +27,15 @@ NotifierFn = Callable[[WebSocketEvent], Coroutine[None, None, None]]
 
 
 def FileObserver(path: str, notifier: NotifierFn) -> BaseObserver:
+    """Create a file observer that watches for changes to .py files.
+
+    Args:
+        path: The path to watch for changes.
+        notifier: The aysnc function to call when a change is detected.
+
+    Returns:
+        A watchdog observer instance that has started. It is the caller's responsibility
+        to call stop() on the observer when it is no longer needed."""
     observer = Observer()
     event_handler = _FileChangeHandler(notifier, asyncio.get_running_loop())
     observer.schedule(event_handler, path, recursive=True)
@@ -49,26 +73,32 @@ class _FileChangeHandler(FileSystemEventHandler):
 
     def on_created(self, event: FileSystemEvent):
         if self._event_filter(event):
+            type = "directory" if event.is_directory else "file"
             ws_event = WebSocketEvent(
-                type="FILE_CREATED", data={"path": event.src_path}
+                type=f"{type}_created", data={"path": event.src_path}
             )
             asyncio.run_coroutine_threadsafe(self._notify_func(ws_event), self._loop)
 
     def on_modified(self, event: FileSystemEvent):
         if self._event_filter(event):
+            type = "directory" if event.is_directory else "file"
             ws_event = WebSocketEvent(
-                type="FILE_MODIFIED", data={"path": event.src_path}
+                type=f"{type}_modified", data={"path": event.src_path}
             )
             asyncio.run_coroutine_threadsafe(self._notify_func(ws_event), self._loop)
 
     def on_moved(self, event: FileSystemEvent):
         if self._event_filter(event):
-            ws_event = WebSocketEvent(type="FILE_MOVED", data={"path": event.src_path})
+            type = "directory" if event.is_directory else "file"
+            ws_event = WebSocketEvent(
+                type=f"{type}_moved", data={"path": event.src_path}
+            )
             asyncio.run_coroutine_threadsafe(self._notify_func(ws_event), self._loop)
 
     def on_deleted(self, event: FileSystemEvent):
         if self._event_filter(event):
+            type = "directory" if event.is_directory else "file"
             ws_event = WebSocketEvent(
-                type="FILE_DELETED", data={"path": event.src_path}
+                type=f"{type}_deleted", data={"path": event.src_path}
             )
             asyncio.run_coroutine_threadsafe(self._notify_func(ws_event), self._loop)

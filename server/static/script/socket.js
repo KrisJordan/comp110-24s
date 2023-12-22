@@ -12,9 +12,12 @@ function WebSocketContainer({ ...props }) {
 
     useEffect(() => {
         let ws = new WebSocket("ws://localhost:8000/ws");
+        window.ws = ws;
         ws.onopen = () => {
             setWebSocketOpen(true);
             ws.send(JSON.stringify({ "type": "LS", "data": { "path": "/" } }));
+            ws.send(JSON.stringify({ "type": "RUN", "data": { "module": "hello" } }));
+            // ws.send(JSON.stringify({ "type": "RUN", "data": { "module": "error" } }));
         };
 
         ws.onmessage = (message) => {
@@ -23,7 +26,10 @@ function WebSocketContainer({ ...props }) {
 
         ws.onclose = () => {
             setWebSocketOpen(false);
-            setTimeout(() => setWebSocket(new WebSocket("ws://localhost:8000/ws")), 1000);
+            setTimeout(() => {
+                console.log("RECONNECTING...");
+                setWebSocket(new WebSocket("ws://localhost:8000/ws"));
+            }, 10000);
         };
 
         setWebSocket(ws);
