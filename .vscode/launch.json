@@ -5,18 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Project 01",
+            "name": "WebSockets",
             "type": "python",
             "request": "launch",
-            "module": "enter-your-module-name",
-            "justMyCode": true
-        },
-        {
-            "name": "Project 02",
-            "type": "python",
-            "request": "launch",
-            "module": "comp110",
-            "justMyCode": true
+            "module": "uvicorn",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "server.main:app"
+            ],
+            "subProcess": true,
+            "justMyCode": false
         }
     ]
 }
