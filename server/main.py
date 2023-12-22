@@ -12,7 +12,6 @@ from .web_socket_manager import WebSocketManager
 from .file_observer import FileObserver
 from .controller import web_socket_controller
 
-
 web_socket_manager = WebSocketManager(web_socket_controller)
 """Web Socket Manager handles connections and dispatches to the controller."""
 

@@ -1,7 +1,9 @@
 import aiofiles.os
 from fastapi import WebSocket
 from server.web_socket_event import WebSocketEvent
-from .async_runner import AsyncRunner
+from .async_python_subprocess import AsyncPythonSubprocess
+
+subprocesses: dict[int, AsyncPythonSubprocess] = {}
 
 
 async def web_socket_controller(client: WebSocket, event: WebSocketEvent):
@@ -12,8 +14,18 @@ async def web_socket_controller(client: WebSocket, event: WebSocketEvent):
             files = await list_files_async(".")
             response = WebSocketEvent(type="LS", data={"files": files})
         case "RUN":
-            pid = await AsyncRunner(event.data["module"], client).start()
+            subprocess = AsyncPythonSubprocess(event.data["module"], client)
+            pid = await subprocess.start()
+            subprocesses[pid] = subprocess
             response = WebSocketEvent(type="RUNNING", data={"pid": pid})
+        case "STDIN":
+            pid = event.data["pid"]
+            if pid in subprocesses:
+                process = subprocesses[pid]
+                if process and not process.subprocess_exited():
+                    process._process.stdin.write(event.data["data"] + "\n")
+                    process._process.stdin.flush()
+            return
         case _:
             response = WebSocketEvent(type="??", data={})
 
