@@ -5,16 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "WebSockets",
+            "name": "COMP110 Runner",
             "type": "python",
             "request": "launch",
-            "module": "uvicorn",
-            "cwd": "${workspaceFolder}",
-            "args": [
-                "server.main:app"
-            ],
+            "module": "server",
             "subProcess": true,
-            "justMyCode": false
+            "justMyCode": true,
+            "cwd": "/workspace"
         }
     ]
 }
