@@ -2,6 +2,7 @@ import aiofiles.os
 from fastapi import WebSocket
 from server.web_socket_event import WebSocketEvent
 from .async_python_subprocess import AsyncPythonSubprocess
+from .models import NamespaceTree, Module, Package
 
 subprocesses: dict[int, AsyncPythonSubprocess] = {}
 
@@ -32,9 +33,19 @@ async def web_socket_controller(client: WebSocket, event: WebSocketEvent):
     await client.send_text(response.model_dump_json())
 
 
-async def list_files_async(directory: str):
-    files: list[str] = []
+
+async def list_files_async(directory: str) -> NamespaceTree:
+    packages: list[Package | Module] = []
     for entry in await aiofiles.os.scandir(directory):
-        if entry.is_file():
-            files.append(entry.name)
-    return files
+        if entry.is_file() and entry.name.endswith('.py'):
+            # If the entry is a .py file, create a Module object.
+            module = Module(name=entry.name, full_path=entry.path)
+            packages.append(module)
+        elif entry.is_dir():
+            if entry.name in ("node_modules", ".git", ".vscode", ".devcontainer", "__pycache__", ".pytest_cache"):
+                continue
+            tree = await list_files_async(entry.path)
+            package = Package(children=tree.children, name=entry.name, full_path=entry.path)
+            packages.append(package)
+    return NamespaceTree(children=packages)
+

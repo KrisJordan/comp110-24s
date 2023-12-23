@@ -1,11 +1,29 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 
+interface Tree {
+    ns_type: 'tree'
+    children: (Package | Module)[];
+}
+
+interface Package {
+    ns_type: 'package'
+    name: string
+    path: string
+    children: (Package | Module)[];
+}
+
+interface Module {
+    ns_type: 'module'
+    name: string
+    path: string
+}
+
 function App() {
   const [webSocketOpen, setWebSocketOpen] = useState(false);
   const [_webSocket, setWebSocket] = useState<WebSocket | null>(null);
   const [messages, setMessages] = useState<string[]>([]);
-  const [files, setFiles] = useState<string[]>([]);
+  const [files, setFiles] = useState<Tree>({ns_type: 'tree', children: []});
 
   useEffect(() => {
     let ws = new WebSocket("ws://localhost:8000/ws");
@@ -26,6 +44,7 @@ function App() {
                 setMessages((messages) => [...messages, `Running PID: ${msg.data.pid}`]);
                 break;
             case "LS":
+                console.log(msg.data.files);
                 setFiles(msg.data.files);
                 break;
             case "EXIT":
@@ -51,6 +70,21 @@ function App() {
     };
   }, []);
 
+  let buildTree = (tree: { children: (Module | Package)[] }) => {
+    let children = [];
+    for (let item of tree.children) {
+        switch (item.ns_type) {
+            case 'module':
+                children.push(<li key={item.path + item.name}><a>{item.name}</a></li>);
+                break;
+            case 'package':
+                children.push(<li key={item.path + item.name}><a>{item.name}</a>{buildTree(item)}</li>)
+                break;
+        }
+    }
+    return <ul>{children}</ul>
+  };
+
 
     if (!webSocketOpen) {
         return <div className="navbar bg-neutral text-neutral-content rounded-box">
@@ -63,7 +97,7 @@ function App() {
         </div>;
     } else {
         let messagesHtml = messages.map((msg, index) => <p key={index}>{msg}</p>);
-        let filesHtml = files.map((file, index) => <li key={index}><a>{file}</a></li>)
+        let filesHtml = buildTree(files);
         return <>
             <div className="navbar bg-neutral text-neutral-content rounded-box">
                 <div className="flex-none">
