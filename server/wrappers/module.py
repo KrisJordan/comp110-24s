@@ -1,4 +1,4 @@
-import importlib
+import runpy
 import sys
 from typing import Any
 
@@ -16,4 +16,4 @@ def audit_hook(event: str, args: tuple[Any, ...]):
 
 sys.addaudithook(audit_hook)
 
-imported_module = importlib.import_module(module_name)
+runpy.run_module(module_name, run_name="__main__")
