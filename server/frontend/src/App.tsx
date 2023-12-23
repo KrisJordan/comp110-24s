@@ -9,28 +9,29 @@ interface Tree {
 interface Package {
     ns_type: 'package'
     name: string
-    path: string
+    full_path: string
     children: (Package | Module)[];
 }
 
 interface Module {
     ns_type: 'module'
     name: string
-    path: string
+    full_path: string
 }
 
 function App() {
   const [webSocketOpen, setWebSocketOpen] = useState(false);
-  const [_webSocket, setWebSocket] = useState<WebSocket | null>(null);
+  const [webSocket, setWebSocket] = useState<WebSocket | null>(null);
   const [messages, setMessages] = useState<string[]>([]);
   const [files, setFiles] = useState<Tree>({ns_type: 'tree', children: []});
 
   useEffect(() => {
     let ws = new WebSocket("ws://localhost:8000/ws");
     window.ws! = ws;
+
     ws.onopen = () => {
         setWebSocketOpen(true);
-        ws.send(JSON.stringify({ "type": "LS", "data": { "path": "/" } }));
+        ws.send(JSON.stringify({ "type": "LS", "data": { "path": "/comp110" } }));
         ws.send(JSON.stringify({ "type": "RUN", "data": { "module": "hello" } }));
     };
 
@@ -53,13 +54,22 @@ function App() {
             case "STDERR":
                 setMessages((messages) => [...messages, `ERR: ${msg.data.data}`])
                 break;
+            case "directory_modified":
+                // TODO: This is a hack... we should be able to update state
+                // without an LS... but it works (:
+                ws.send(JSON.stringify({ "type": "LS", "data": { "path": "/comp110" } }));
+                break;
+            default:
+                console.log(message);
+                break;
         }
     };
 
     ws.onclose = () => {
         setWebSocketOpen(false);
         setTimeout(() => {
-            setWebSocket(new WebSocket("ws://localhost:8000/ws"));
+            ws = new WebSocket("ws://localhost:8000/ws");
+            setWebSocket(ws);
         }, 10000);
     };
 
@@ -70,12 +80,18 @@ function App() {
     };
   }, []);
 
+  let selectModule = (module: Module) => {
+    module = module.full_path.replace(/^\.\//, '').replace(/\//g, '.').replace('.py', '');
+    setMessages([]);
+    webSocket?.send(JSON.stringify({ "type": "RUN", "data": { "module": module } }));
+  };
+
   let buildTree = (tree: { children: (Module | Package)[] }) => {
     let children = [];
     for (let item of tree.children) {
         switch (item.ns_type) {
             case 'module':
-                children.push(<li key={item.path + item.name}><a>{item.name}</a></li>);
+                children.push(<li key={item.path + item.name} onClick={() => selectModule(item as Module)}><a>{item.name}</a></li>);
                 break;
             case 'package':
                 children.push(<li key={item.path + item.name}><details><summary><a>{item.name}</a></summary>{buildTree(item)}</details></li>)

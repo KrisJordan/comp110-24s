@@ -47,5 +47,6 @@ async def list_files_async(directory: str) -> NamespaceTree:
             tree = await list_files_async(entry.path)
             package = Package(children=tree.children, name=entry.name, full_path=entry.path)
             packages.append(package)
+    packages.sort(key=lambda o: o.name)
     return NamespaceTree(children=packages)
 
