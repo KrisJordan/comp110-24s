@@ -42,7 +42,13 @@ class AsyncPythonSubprocess:
     def _open_child_process(self) -> Popen[str]:
         """Open the child process with flags for debugging."""
         return subprocess.Popen(
-            ["python3", "-Xfrozen_modules=off", "-m", self._module],
+            [
+                "python3",
+                "-Xfrozen_modules=off",
+                "-m",
+                "server.wrappers.module",
+                self._module
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
@@ -85,10 +91,21 @@ class AsyncPythonSubprocess:
     #         print(e, sys.stderr)
     #         return
 
+    async def _read_stdout(self, stdout: StreamReader):
+        output = await stdout.readline()
+        is_prompt = False
+
+        if output[0:4] == b"\xff\xff\xff\xff":
+            length = int(output[4:].decode())
+            output = await stdout.read(length)
+            is_prompt = True
+
+        return (output.decode(), is_prompt)
+
     async def _stdout_pipe(self, stdout: StreamReader):
         while True:
             try:
-                output = (await stdout.readline()).decode()
+                output, is_prompt = await self._read_stdout(stdout)
                 if (
                     output == "" and self.subprocess_exited()
                 ) or not self.client_connected():
@@ -98,7 +115,11 @@ class AsyncPythonSubprocess:
                     await self._client.send_text(
                         WebSocketEvent(
                             type="STDOUT",
-                            data={"pid": self._process.pid, "data": output},
+                            data={
+                                "pid": self._process.pid,
+                                "data": output,
+                                "is_input_prompt": is_prompt,
+                            },
                         ).model_dump_json()
                     )
             except asyncio.CancelledError:
