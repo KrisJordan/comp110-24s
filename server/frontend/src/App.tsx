@@ -78,7 +78,7 @@ function App() {
                 children.push(<li key={item.path + item.name}><a>{item.name}</a></li>);
                 break;
             case 'package':
-                children.push(<li key={item.path + item.name}><a>{item.name}</a>{buildTree(item)}</li>)
+                children.push(<li key={item.path + item.name}><details><summary><a>{item.name}</a></summary>{buildTree(item)}</details></li>)
                 break;
         }
     }
