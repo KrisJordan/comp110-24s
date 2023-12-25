@@ -167,4 +167,4 @@ class AsyncPythonSubprocess:
                     await self._client.send_text(WebSocketEvent(type="EXIT", data={"pid": self._process.pid, "returncode": self._process.returncode}).model_dump_json())
                 break
 
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.1)

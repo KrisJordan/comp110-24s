@@ -1,138 +1,65 @@
-import { useEffect, useState } from 'react'
-import './App.css'
+import { useEffect, useState, useCallback } from 'react'
+import useWebSocket, { ReadyState } from './useWebSocket';
+import NamespaceTree from './NamespaceTree';
+import { Message } from './Message';
+import { Module } from './NamespaceTree';
+import { PyProcess, PyProcessState } from './PyProcess';
+import { PyProcessUI } from './PyProcessUI';
 
-interface Tree {
-    ns_type: 'tree'
-    children: (Package | Module)[];
-}
-
-interface Package {
-    ns_type: 'package'
-    name: string
-    full_path: string
-    children: (Package | Module)[];
-}
-
-interface Module {
-    ns_type: 'module'
-    name: string
-    full_path: string
-}
+import './App.css';
 
 function App() {
-  const [webSocketOpen, setWebSocketOpen] = useState(false);
-  const [webSocket, setWebSocket] = useState<WebSocket | null>(null);
-  const [messages, setMessages] = useState<string[]>([]);
-  const [files, setFiles] = useState<Tree>({ns_type: 'tree', children: []});
-
-  useEffect(() => {
-    let ws = new WebSocket("ws://localhost:8000/ws");
-    window.ws! = ws;
-
-    ws.onopen = () => {
-        setWebSocketOpen(true);
-        ws.send(JSON.stringify({ "type": "LS", "data": { "path": "/comp110" } }));
-        ws.send(JSON.stringify({ "type": "RUN", "data": { "module": "hello" } }));
-    };
-
-    ws.onmessage = (message) => {
-        let msg = JSON.parse(message.data);
-        switch (msg.type) {
-            case "STDOUT":
-                setMessages((messages) => [...messages, msg.data.data]);
-                break;
-            case "RUNNING":
-                setMessages((messages) => [...messages, `Running PID: ${msg.data.pid}`]);
-                break;
-            case "LS":
-                console.log(msg.data.files);
-                setFiles(msg.data.files);
-                break;
-            case "EXIT":
-                setMessages((messages) => [...messages, `Exit PID: ${msg.data.pid} - Return Code: ${msg.data.returncode}`])
-                break;
-            case "STDERR":
-                setMessages((messages) => [...messages, `ERR: ${msg.data.data}`])
-                break;
-            case "directory_modified":
-                // TODO: This is a hack... we should be able to update state
-                // without an LS... but it works (:
-                ws.send(JSON.stringify({ "type": "LS", "data": { "path": "/comp110" } }));
-                break;
-            default:
-                console.log(message);
-                break;
+    const [messageHistory, setMessageHistory] = useState<string[]>([]);
+    const [runningProcess, setRunningProcess] = useState<PyProcess | null>(null);
+    const [requestId, setRequestId] = useState<number>(0);
+    const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket();
+    
+    useEffect(() => {
+        if (lastJsonMessage && Object.keys(lastJsonMessage).length !== 0) {
+            let message = lastJsonMessage as Message;
+            setMessageHistory(prev => prev.concat(message.type));
         }
-    };
+    }, [lastJsonMessage, setMessageHistory]);
 
-    ws.onclose = () => {
-        setWebSocketOpen(false);
-        setTimeout(() => {
-            ws = new WebSocket("ws://localhost:8000/ws");
-            setWebSocket(ws);
-        }, 10000);
-    };
+    const connectionStatus = {
+        [ReadyState.CONNECTING]: 'Connecting',
+        [ReadyState.OPEN]: 'Open',
+        [ReadyState.CLOSING]: 'Closing',
+        [ReadyState.CLOSED]: 'Closed',
+        [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
+    }[readyState];
 
-    setWebSocket(ws);
+    const runModule = useCallback((module: Module) => {
+        let moduleStr = module.full_path.replace(/^\.\//, '').replace(/\//g, '.').replace('.py', '');
+        sendJsonMessage({"type": "RUN", "data": {"module": moduleStr, "request_id": requestId}});
+        setRequestId(prev => prev + 1);
+        setRunningProcess({ 
+            module: moduleStr,
+            requestId: requestId,
+            state: PyProcessState.STARTING
+        });
+    }, [requestId]);
 
-    return () => {
-        ws.close()
-    };
-  }, []);
+    let selectedUI = runningProcess ? <PyProcessUI pyProcess={runningProcess} key={runningProcess.requestId} /> : null;
 
-  let selectModule = (module: Module) => {
-    module = module.full_path.replace(/^\.\//, '').replace(/\//g, '.').replace('.py', '');
-    setMessages([]);
-    webSocket?.send(JSON.stringify({ "type": "RUN", "data": { "module": module } }));
-  };
-
-  let buildTree = (tree: { children: (Module | Package)[] }) => {
-    let children = [];
-    for (let item of tree.children) {
-        switch (item.ns_type) {
-            case 'module':
-                children.push(<li key={item.path + item.name} onClick={() => selectModule(item as Module)}><a>{item.name}</a></li>);
-                break;
-            case 'package':
-                children.push(<li key={item.path + item.name}><details><summary><a>{item.name}</a></summary>{buildTree(item)}</details></li>)
-                break;
-        }
-    }
-    return <ul>{children}</ul>
-  };
-
-
-    if (!webSocketOpen) {
-        return <div className="navbar bg-neutral text-neutral-content rounded-box">
-            <div className="flex-none">
-                <button className="btn btn-square btn-ghost">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="inline-block w-5 h-5 stroke-current"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </button>
-            </div>
-            <div className="text-xl flex-1 ml-2">Connecting...</div>
-        </div>;
-    } else {
-        let messagesHtml = messages.map((msg, index) => <p key={index}>{msg}</p>);
-        let filesHtml = buildTree(files);
-        return <>
+    return <>
             <div className="navbar bg-neutral text-neutral-content rounded-box">
-                <div className="flex-none">
-                    <button className="btn btn-square btn-ghost">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="inline-block w-5 h-5 stroke-current"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    </button>
-                </div>
-                <div className="text-xl flex-1 ml-2">hello</div>
+                <div className="text-xl flex-1 ml-2">{runningProcess ? runningProcess.module : 'Select a Module'}</div>
             </div>
             <div className="flex">
-                <div className="menu menu-s rounded-lg max-w-xs flex-none w-25">
-                    {filesHtml}
+                <div className="flex-none">
+                    <NamespaceTree selectModule={runModule}/>
                 </div>
-                <div className="flex-auto ml-8 text-ellipsis overflow-hidden">
-                    {messagesHtml}
+                <div className="flex-1 ml-4 mt-4">
+                    { selectedUI }
                 </div>
             </div>
-        </>;
-    }
+            <ul className="hidden">
+                {messageHistory.map((message, idx) => (
+                    <li key={idx}>{message}</li>
+                ))}
+            </ul>
+    </>;
 }
 
-export default App
+export default App;
