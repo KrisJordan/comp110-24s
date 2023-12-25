@@ -9,7 +9,6 @@ subprocesses: dict[int, AsyncPythonSubprocess] = {}
 
 async def web_socket_controller(client: WebSocket, event: WebSocketEvent):
     response: WebSocketEvent
-    # print(event.model_dump_json())
     match event.type:
         case "LS":
             files = await list_files_async(".")
@@ -21,7 +20,11 @@ async def web_socket_controller(client: WebSocket, event: WebSocketEvent):
             subprocesses[pid] = subprocess
             response = WebSocketEvent(type="RUNNING", data={"pid": pid, "request_id": request_id})
         case "KILL":
-            print(f"TODO: Kill Process {event.data['pid']}")
+            pid = event.data["pid"]
+            if pid in subprocesses:
+                process = subprocesses[pid]
+                if process:
+                    process._process.kill()
             return
         case "STDIN":
             pid = event.data["pid"]
