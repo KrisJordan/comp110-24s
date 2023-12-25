@@ -20,6 +20,9 @@ async def web_socket_controller(client: WebSocket, event: WebSocketEvent):
             pid = await subprocess.start()
             subprocesses[pid] = subprocess
             response = WebSocketEvent(type="RUNNING", data={"pid": pid, "request_id": request_id})
+        case "KILL":
+            print(f"TODO: Kill Process {event.data['pid']}")
+            return
         case "STDIN":
             pid = event.data["pid"]
             if pid in subprocesses:

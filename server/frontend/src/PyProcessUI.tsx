@@ -64,6 +64,15 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
         }
     }, [lastMessage, pyProcess]);
 
+    useEffect(() => {
+        // This is clean-up only...
+        return () => {
+            if (pyProcess.state !== PyProcessState.EXITED && pyProcess.pid) {
+                sendJsonMessage({type: "KILL", data: {pid: pyProcess.pid}})
+            }
+        };
+    }, [pyProcess])
+
     let status: string;
     switch (pyProcess.state) {
         case PyProcessState.STARTING:
