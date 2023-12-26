@@ -2,6 +2,7 @@ import React, { PropsWithChildren, useCallback, useEffect, useState } from "reac
 import { PyProcess, PyProcessState } from "./PyProcess";
 import useWebSocket from "./useWebSocket";
 import { parseJsonMessage } from "./Message";
+import { StdErrMessage } from "./StdErrMessage";
 
 interface PyProcessUIProps {
     pyProcess: PyProcess
@@ -135,7 +136,7 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                 case 'stdout':
                     return <p key={idx}>{line.line}</p>
                 case 'stderr':
-                    return <p key={idx} className="text-error">{line.line}</p>
+                    return <StdErrMessage key={idx} line={line.line} />;
             }
         })}
     </div>;
