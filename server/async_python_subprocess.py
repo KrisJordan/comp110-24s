@@ -22,7 +22,6 @@ class AsyncPythonSubprocess:
         stdout_reader, stderr_reader = await self._connect_output_pipes(self._process)
         self._stdout_pipe_task = asyncio.create_task(self._stdout_pipe(stdout_reader))
         self._stderr_pipe_task = asyncio.create_task(self._stderr_pipe(stderr_reader))
-        # self._stdin_pipe_task = asyncio.create_task(self._stdin_pipe())
         self._exit_task = asyncio.create_task(self._exit())
 
         return self._process.pid
@@ -39,6 +38,17 @@ class AsyncPythonSubprocess:
     def client_connected(self):
         return self._client.client_state == WebSocketState.CONNECTED
 
+    def write(self, data: str) -> None:
+        if self._process and self._process.stdin and not self.subprocess_exited():
+            if not data.endswith("\n"):
+                data += "\n"
+            self._process.stdin.write(data)
+            self._process.stdin.flush()
+
+    def kill(self) -> None:
+        if self._process and not self.subprocess_exited():
+            self._process.kill()
+
     def _open_child_process(self) -> Popen[str]:
         """Open the child process with flags for debugging."""
         return subprocess.Popen(
@@ -47,7 +57,7 @@ class AsyncPythonSubprocess:
                 "-Xfrozen_modules=off",
                 "-m",
                 "server.wrappers.module",
-                self._module
+                self._module,
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -73,23 +83,6 @@ class AsyncPythonSubprocess:
         await loop.connect_read_pipe(lambda: stdout_protocol, process.stdout)
         await loop.connect_read_pipe(lambda: stderr_protocol, process.stderr)
         return (stdout_reader, stderr_reader)
-
-    # async def _stdin_pipe(self):
-    #     try:
-    #         while not self.subprocess_exited() and self.client_connected():
-    #             try:
-    #                 # Avoid waiting on input that isn't coming when process may end...
-    #                 data = await asyncio.wait_for(self._client.receive_text(), 1)
-    #                 if self._process and self._process.stdin:
-    #                     self._process.stdin.write(data + "\n")
-    #                     self._process.stdin.flush()
-    #             except TimeoutError:
-    #                 ...
-    #     except asyncio.CancelledError:
-    #         print("_stdin_pipe Cancelled error...", sys.stderr)
-    #     except Exception as e:
-    #         print(e, sys.stderr)
-    #         return
 
     async def _read_stdout(self, stdout: StreamReader):
         output = await stdout.readline()
@@ -159,12 +152,19 @@ class AsyncPythonSubprocess:
             if self.subprocess_exited():
                 # Let the pipes clear...
                 await asyncio.gather(
-                    # self._stdin_pipe_task,
                     self._stdout_pipe_task,
                     self._stderr_pipe_task,
                 )
                 if self.client_connected():
-                    await self._client.send_text(WebSocketEvent(type="EXIT", data={"pid": self._process.pid, "returncode": self._process.returncode}).model_dump_json())
+                    await self._client.send_text(
+                        WebSocketEvent(
+                            type="EXIT",
+                            data={
+                                "pid": self._process.pid,
+                                "returncode": self._process.returncode,
+                            },
+                        ).model_dump_json()
+                    )
                 break
 
             await asyncio.sleep(0.1)
