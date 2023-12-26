@@ -23,22 +23,22 @@ type StdIn = {
     response?: string;
 }
 
-type StdIO =  StdOut | StdErr |  StdIn;
+type StdIO = StdOut | StdErr | StdIn;
 
 
 export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
     const { lastMessage, readyState, sendJsonMessage } = useWebSocket();
-    const [ pyProcess, setPyProcess ] = useState(props.pyProcess);
-    const [ stdio, setStdIO ] = useState<StdIO[]>([]);
-    const [ stdinValue, setStdinValue ] = useState<string>("");
+    const [pyProcess, setPyProcess] = useState(props.pyProcess);
+    const [stdio, setStdIO] = useState<StdIO[]>([]);
+    const [stdinValue, setStdinValue] = useState<string>("");
 
     useEffect(() => {
         let message = parseJsonMessage(lastMessage);
         if (message) {
-            switch(message.type) {
+            switch (message.type) {
                 case 'RUNNING':
                     if (message.data.request_id === pyProcess.requestId) {
-                        setPyProcess(prev => { 
+                        setPyProcess(prev => {
                             prev.pid = message?.data.pid;
                             prev.state = PyProcessState.RUNNING;
                             return prev;
@@ -50,6 +50,11 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                         setStdIO((prev) => prev.concat({ type: 'stdout', line: message?.data.data }))
                     } else {
                         setStdIO((prev) => prev.concat({ type: 'stdin', prompt: message?.data.data }))
+                    }
+                    break;
+                case 'STDERR':
+                    if (!message.data.is_input_prompt) {
+                        setStdIO((prev) => prev.concat({ type: 'stderr', line: message?.data.data }))
                     }
                     break;
                 case 'EXIT':
@@ -68,7 +73,7 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
         // This is clean-up only...
         return () => {
             if (pyProcess.state !== PyProcessState.EXITED && pyProcess.pid) {
-                sendJsonMessage({type: "KILL", data: {pid: pyProcess.pid}})
+                sendJsonMessage({ type: "KILL", data: { pid: pyProcess.pid } })
             }
         };
     }, [pyProcess])
@@ -91,7 +96,7 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
     };
 
     const handleStdInSend = useCallback((lineIndex: number, stdinLine: StdIn) => {
-        let message = {"type": "STDIN", "data": { "data": stdinValue, "pid": pyProcess.pid }};
+        let message = { "type": "STDIN", "data": { "data": stdinValue, "pid": pyProcess.pid } };
         sendJsonMessage(message);
         setStdIO((prev) => {
             let line = stdio[lineIndex];
@@ -112,14 +117,14 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
         });
     }, [stdinValue]);
 
-    return <>
-        <b>{ status }</b>
-        { stdio.map((line, idx) => {
+    return <div className="prose">
+        <h3>{status}</h3>
+        {stdio.map((line, idx) => {
             switch (line.type) {
                 case 'stdin':
                     if (line.response === undefined) {
                         return <p key={idx}>{line.prompt}<br />
-                            <input onChange={handleStdInChange} onKeyUp={(e) => { if (e.key === 'Enter') {handleStdInSend(idx, line);}}} value={stdinValue} autoFocus={true} type="text" className="input input-bordered w-full max-w-xs"></input>
+                            <input onChange={handleStdInChange} onKeyUp={(e) => { if (e.key === 'Enter') { handleStdInSend(idx, line); } }} value={stdinValue} autoFocus={true} type="text" className="input input-bordered w-full max-w-xs"></input>
                             <button onClick={() => handleStdInSend(idx, line)} className="btn btn-primary ml-4">Send</button>
                         </p>
                     } else {
@@ -129,9 +134,9 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                     }
                 case 'stdout':
                     return <p key={idx}>{line.line}</p>
-                default:
-                    return <></>;
+                case 'stderr':
+                    return <p key={idx} className="text-error">{line.line}</p>
             }
-            })}
-    </>
+        })}
+    </div>;
 }
