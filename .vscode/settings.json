@@ -17,5 +17,6 @@
         "**/.gitignore": true,
         "**/pyrightconfig.json": true,
         "**/requirements.txt": true,
+        "**/.mypy_cache": true,
     }
 }
