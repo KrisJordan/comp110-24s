@@ -1,5 +1,8 @@
 import runpy
 import sys
+import traceback
+import json
+import inspect
 from typing import Any
 
 if len(sys.argv) < 2:
@@ -16,4 +19,54 @@ def audit_hook(event: str, args: tuple[Any, ...]):
 
 sys.addaudithook(audit_hook)
 
-runpy.run_module(module_name, run_name="__main__")
+try:
+    runpy.run_module(module_name, run_name="__main__")
+except Exception as e:
+    tb_info = traceback.extract_tb(e.__traceback__)
+    frames = inspect.getinnerframes(e.__traceback__)  # type: ignore
+
+    stack_trace: list[dict[str, Any]] = []
+
+    info_frames = [frame for frame in tb_info]
+    stack_frames = [frame for frame in frames]
+
+    for i in range(len(info_frames)):
+        frame = info_frames[i]
+        stack_frame = stack_frames[i]
+
+        if frame.filename.startswith("/workspace/server") or frame.filename.startswith(
+            "/usr/lib"
+        ):
+            continue
+
+        locals: dict[str, Any] = {}
+        for local in stack_frame.frame.f_locals:
+            try:
+                json.dumps(stack_frame.frame.f_locals[local])
+                locals[local] = stack_frame.frame.f_locals[local]
+            except (TypeError, OverflowError):
+                continue
+
+        stack_trace.append(
+            {
+                "filename": frame.filename.replace("/workspace/", ""),
+                "lineno": frame.lineno,
+                "name": frame.name,
+                "line": frame.line,
+                "end_lineno": frame.end_lineno,
+                "colno": frame.colno,
+                "end_colno": frame.end_colno,
+                "locals": locals,
+            }
+        )
+
+    error_info = {
+        "type": type(e).__name__,
+        "message": str(e),
+        "stack_trace": stack_trace,
+    }
+
+    json_error_info = json.dumps(error_info)
+
+    sys.stderr.write(json_error_info + "\n")
+    sys.exit(1)
