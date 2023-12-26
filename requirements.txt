@@ -14,12 +14,16 @@ pillow >=10.1.0, <10.2.0
 
 # FasAPI
 fastapi >=0.104.1, <0.105.0
-uvicorn >=0.24.0, <0.25.0
+uvicorn[standard] >=0.25.0, <0.26.0
 
 # Kubernetes / CloudApps
 blinker >=1.7.0, <1.8.0
 kubernetes >=28.1.0, <28.2.0
 kubernetes-stubs >=22.6.0, <28.2.0
+
+# COMP110 System Tooling
+watchdog >=3.0.0, <3.1.0
+aiofiles >=23.2.1, <23.3.0
 
 # Data Science
 ipykernel >=6.27.1, <6.28.0

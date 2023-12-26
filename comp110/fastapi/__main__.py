@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 import uvicorn
+import inspect
+from . import demo
 
 app = FastAPI()
 
 
-@app.get("/")
-async def read_root():
-    return {"Hello": "World"}
+for name, obj in inspect.getmembers(demo):
+    if inspect.isfunction(obj):
+        app.add_api_route(f"/{name}", obj, methods=["POST"])
 
 
 if __name__ == "__main__":
