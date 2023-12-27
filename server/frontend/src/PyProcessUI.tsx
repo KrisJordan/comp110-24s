@@ -3,36 +3,12 @@ import { PyProcess, PyProcessState } from "./PyProcess";
 import useWebSocket from "./useWebSocket";
 import { parseJsonMessage } from "./Message";
 import { StdErrMessage } from "./StdErrMessage";
+import { StdOutGroupContainer } from "./StdOutGroupContainer";
+import { StdIn, StdOutGroup, StdIO } from "./StdIOTypes";
 
 interface PyProcessUIProps {
     pyProcess: PyProcess
 }
-
-type StdOut = {
-    type: 'stdout';
-    line: string;
-}
-
-type StdErr = {
-    type: 'stderr';
-    line: string;
-}
-
-type StdIn = {
-    type: 'stdin';
-    prompt: string;
-    response?: string;
-}
-
-type StdOutGroup = {
-    type: 'group';
-    children: StdOut[];
-    endTime: number;
-    startTime: number;
-}
-
-type StdIO = StdOut | StdErr | StdIn | StdOutGroup;
-
 
 export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
     const { lastMessage, readyState, sendJsonMessage } = useWebSocket();
@@ -59,9 +35,9 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                             let time = Date.now();
                             let prevLine = prev[prev.length - 1];
 
-                            if (prevLine?.type === 'group') {
+                            if (prevLine?.type === 'stdout_group') {
                                 let updatedGroup: StdOutGroup = {
-                                    type: 'group',
+                                    type: 'stdout_group',
                                     children: [...prevLine.children, { type: 'stdout', line: message?.data.data }],
                                     startTime: prevLine.startTime,
                                     endTime: time
@@ -69,7 +45,7 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                                 return [...(prev.slice(0, -1)), updatedGroup];
                             }
 
-                            return prev.concat({ type: 'group', children: [{ type: 'stdout', line: message?.data.data }], endTime: time, startTime: time });
+                            return prev.concat({ type: 'stdout_group', children: [{ type: 'stdout', line: message?.data.data }], endTime: time, startTime: time });
                         });
                     } else {
                         setStdIO((prev) => prev.concat({ type: 'stdin', prompt: message?.data.data }))
@@ -140,10 +116,6 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
         });
     }, [stdinValue]);
 
-    const stdOutLine = (idx: number, childLine: StdOut, subIdx: number) => {
-        return <p key={`${idx}-${subIdx}`}>{childLine.line}</p>
-    };
-
     return <div className="prose">
         <h3>{status}</h3>
         {stdio.map((line, idx) => {
@@ -159,25 +131,10 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                             <input autoFocus={true} type="text" className="input input-bordered w-full max-w-xs" value={line.response} disabled={true}></input>
                         </p>
                     }
-                case 'stdout':
-                    return <p key={idx}>{line.line}</p>
                 case 'stderr':
                     return <StdErrMessage key={idx} line={line.line} />;
-                case 'group':
-                    if (line.children.length >= 10 && line.children.length / (line.endTime - line.startTime) > 0.01) {
-                        return <div>
-                            {line.children.slice(0, 2).map((childLine, subIdx) => stdOutLine(idx, childLine, subIdx))}
-                            <details key={idx}>
-                                <summary><strong>{line.children.length - 4}</strong> additional lines hidden</summary>
-                                <div>
-                                    {line.children.slice(2, line.children.length - 2).map((childLine, subIdx) => stdOutLine(idx, childLine, subIdx))}
-                                </div>
-                            </details>
-                            {line.children.slice(line.children.length - 2).map((childLine, subIdx) => stdOutLine(idx, childLine, subIdx))}
-                        </div>
-                    } else {
-                        return line.children.map((childLine, subIdx) => stdOutLine(idx, childLine, subIdx))
-                    }
+                case 'stdout_group':
+                    return <StdOutGroupContainer key={idx} group={line} minGroupSize={10} groupAfterRatePerSecond={10} />
             }
         })}
     </div>;
