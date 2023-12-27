@@ -161,17 +161,14 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                     return <StdErrMessage key={idx} line={line.line} />;
                 case 'group':
                     if (line.children.length >= 10 && line.children.length / (line.endTime - line.startTime) > 0.01) {
-                        return <div key={idx}>
-                            <p>{line.children[0].line}</p>
-                            <details>
-                                <summary>[{line.children.length - 1} more lines]</summary>
-                                <div>
-                                    {line.children.slice(1).map((childLine, subIdx) => {
-                                        return <p key={`${idx}-${subIdx}`}>{childLine.line}</p>
-                                    })}
-                                </div>
-                            </details>
-                        </div>
+                        return <details key={idx}>
+                            <summary>[{line.children.length}] lines hidden</summary>
+                            <div>
+                                {line.children.map((childLine, subIdx) => {
+                                    return <p key={`${idx}-${subIdx}`}>{childLine.line}</p>
+                                })}
+                            </div>
+                        </details>
                     } else {
                         return line.children.map((childLine, subIdx) => {
                             return <p key={`${idx}-${subIdx}`}>{childLine.line}</p>
