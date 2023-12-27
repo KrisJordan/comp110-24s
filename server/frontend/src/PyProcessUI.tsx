@@ -3,29 +3,12 @@ import { PyProcess, PyProcessState } from "./PyProcess";
 import useWebSocket from "./useWebSocket";
 import { parseJsonMessage } from "./Message";
 import { StdErrMessage } from "./StdErrMessage";
+import { StdOutGroupContainer } from "./StdOutGroupContainer";
+import { StdIn, StdOutGroup, StdIO } from "./StdIOTypes";
 
 interface PyProcessUIProps {
     pyProcess: PyProcess
 }
-
-type StdOut = {
-    type: 'stdout';
-    line: string;
-}
-
-type StdErr = {
-    type: 'stderr';
-    line: string;
-}
-
-type StdIn = {
-    type: 'stdin';
-    prompt: string;
-    response?: string;
-}
-
-type StdIO = StdOut | StdErr | StdIn;
-
 
 export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
     const { lastMessage, readyState, sendJsonMessage } = useWebSocket();
@@ -48,7 +31,22 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                     break;
                 case 'STDOUT':
                     if (!message.data.is_input_prompt) {
-                        setStdIO((prev) => prev.concat({ type: 'stdout', line: message?.data.data }))
+                        setStdIO((prev) => {
+                            let time = Date.now();
+                            let prevLine = prev[prev.length - 1];
+
+                            if (prevLine?.type === 'stdout_group') {
+                                let updatedGroup: StdOutGroup = {
+                                    type: 'stdout_group',
+                                    children: [...prevLine.children, { type: 'stdout', line: message?.data.data }],
+                                    startTime: prevLine.startTime,
+                                    endTime: time
+                                }
+                                return [...(prev.slice(0, -1)), updatedGroup];
+                            }
+
+                            return prev.concat({ type: 'stdout_group', children: [{ type: 'stdout', line: message?.data.data }], endTime: time, startTime: time });
+                        });
                     } else {
                         setStdIO((prev) => prev.concat({ type: 'stdin', prompt: message?.data.data }))
                     }
@@ -133,10 +131,10 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                             <input autoFocus={true} type="text" className="input input-bordered w-full max-w-xs" value={line.response} disabled={true}></input>
                         </p>
                     }
-                case 'stdout':
-                    return <p key={idx}>{line.line}</p>
                 case 'stderr':
                     return <StdErrMessage key={idx} line={line.line} />;
+                case 'stdout_group':
+                    return <StdOutGroupContainer key={idx} group={line} minGroupSize={10} groupAfterRatePerSecond={10} />
             }
         })}
     </div>;
