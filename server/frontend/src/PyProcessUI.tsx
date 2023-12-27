@@ -140,6 +140,10 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
         });
     }, [stdinValue]);
 
+    const stdOutLine = (idx: number, childLine: StdOut, subIdx: number) => {
+        return <p key={`${idx}-${subIdx}`}>{childLine.line}</p>
+    };
+
     return <div className="prose">
         <h3>{status}</h3>
         {stdio.map((line, idx) => {
@@ -161,18 +165,18 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                     return <StdErrMessage key={idx} line={line.line} />;
                 case 'group':
                     if (line.children.length >= 10 && line.children.length / (line.endTime - line.startTime) > 0.01) {
-                        return <details key={idx}>
-                            <summary>[{line.children.length}] lines hidden</summary>
-                            <div>
-                                {line.children.map((childLine, subIdx) => {
-                                    return <p key={`${idx}-${subIdx}`}>{childLine.line}</p>
-                                })}
-                            </div>
-                        </details>
+                        return <div>
+                            {line.children.slice(0, 2).map((childLine, subIdx) => stdOutLine(idx, childLine, subIdx))}
+                            <details key={idx}>
+                                <summary><strong>{line.children.length - 4}</strong> additional lines hidden</summary>
+                                <div>
+                                    {line.children.slice(2, line.children.length - 2).map((childLine, subIdx) => stdOutLine(idx, childLine, subIdx))}
+                                </div>
+                            </details>
+                            {line.children.slice(line.children.length - 2).map((childLine, subIdx) => stdOutLine(idx, childLine, subIdx))}
+                        </div>
                     } else {
-                        return line.children.map((childLine, subIdx) => {
-                            return <p key={`${idx}-${subIdx}`}>{childLine.line}</p>
-                        })
+                        return line.children.map((childLine, subIdx) => stdOutLine(idx, childLine, subIdx))
                     }
             }
         })}
