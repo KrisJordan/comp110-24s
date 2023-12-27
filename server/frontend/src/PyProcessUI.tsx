@@ -24,7 +24,14 @@ type StdIn = {
     response?: string;
 }
 
-type StdIO = StdOut | StdErr | StdIn;
+type StdOutGroup = {
+    type: 'group';
+    children: StdOut[];
+    endTime: number;
+    startTime: number;
+}
+
+type StdIO = StdOut | StdErr | StdIn | StdOutGroup;
 
 
 export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
@@ -48,7 +55,22 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                     break;
                 case 'STDOUT':
                     if (!message.data.is_input_prompt) {
-                        setStdIO((prev) => prev.concat({ type: 'stdout', line: message?.data.data }))
+                        setStdIO((prev) => {
+                            let time = Date.now();
+                            let prevLine = prev[prev.length - 1];
+
+                            if (prevLine?.type === 'group') {
+                                let updatedGroup: StdOutGroup = {
+                                    type: 'group',
+                                    children: [...prevLine.children, { type: 'stdout', line: message?.data.data }],
+                                    startTime: prevLine.startTime,
+                                    endTime: time
+                                }
+                                return [...(prev.slice(0, -1)), updatedGroup];
+                            }
+
+                            return prev.concat({ type: 'group', children: [{ type: 'stdout', line: message?.data.data }], endTime: time, startTime: time });
+                        });
                     } else {
                         setStdIO((prev) => prev.concat({ type: 'stdin', prompt: message?.data.data }))
                     }
@@ -137,6 +159,24 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                     return <p key={idx}>{line.line}</p>
                 case 'stderr':
                     return <StdErrMessage key={idx} line={line.line} />;
+                case 'group':
+                    if (line.children.length >= 10 && line.children.length / (line.endTime - line.startTime) > 0.01) {
+                        return <div key={idx}>
+                            <p>{line.children[0].line}</p>
+                            <details>
+                                <summary>[{line.children.length - 1} more lines]</summary>
+                                <div>
+                                    {line.children.slice(1).map((childLine, subIdx) => {
+                                        return <p key={`${idx}-${subIdx}`}>{childLine.line}</p>
+                                    })}
+                                </div>
+                            </details>
+                        </div>
+                    } else {
+                        return line.children.map((childLine, subIdx) => {
+                            return <p key={`${idx}-${subIdx}`}>{childLine.line}</p>
+                        })
+                    }
             }
         })}
     </div>;
