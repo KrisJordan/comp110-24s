@@ -54,6 +54,7 @@ class AsyncPythonSubprocess:
         return subprocess.Popen(
             [
                 "python3",
+                "-u",
                 "-Xfrozen_modules=off",
                 "-m",
                 "server.wrappers.module",
@@ -103,7 +104,6 @@ class AsyncPythonSubprocess:
                     output == "" and self.subprocess_exited()
                 ) or not self.client_connected():
                     break
-
                 if output and self._process:
                     await self._client.send_text(
                         WebSocketEvent(
