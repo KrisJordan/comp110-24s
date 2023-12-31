@@ -5,6 +5,7 @@ import { Message } from './Message';
 import { Module } from './NamespaceTree';
 import { PyProcess, PyProcessState } from './PyProcess';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { Icon } from '@iconify/react';
 
 import './App.css';
 
@@ -50,13 +51,7 @@ function App() {
     return <>
         <div className="navbar bg-neutral text-neutral-content rounded-box">
             <button onClick={() => { setShowFiles(prev => !prev) }}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="inline-block w-5 h-5 stroke-current mx-3">
-                    {
-                        showFiles
-                            ? <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21L12 12M12 12L3 3M12 12L21.0001 3M12 12L3 21.0001"></path>
-                            : <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    }
-                </svg>
+                <Icon className="mx-3" icon={showFiles ? "ph:x" : "ci:hamburger-md"} height={25} />
             </button>
             <div className="text-xl flex-1 ml-2">{runningProcess ? runningProcess.module : 'Select a Module'}</div>
         </div>
