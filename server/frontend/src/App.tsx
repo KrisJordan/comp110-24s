@@ -4,13 +4,8 @@ import NamespaceTree from './NamespaceTree';
 import { Message } from './Message';
 import { Module } from './NamespaceTree';
 import { PyProcess, PyProcessState } from './PyProcess';
-<<<<<<< HEAD
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-=======
-import { Outlet, useLoaderData, useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
->>>>>>> 48c2d26 (Intermediate commit)
 
 import './App.css';
 
@@ -56,19 +51,10 @@ function App() {
 
     return <>
         <div className="navbar bg-neutral text-neutral-content rounded-box">
-<<<<<<< HEAD
             <button onClick={() => { setShowFiles(prev => !prev) }}>
                 <Icon className="mx-3" icon={showFiles ? "ph:x" : "ci:hamburger-md"} height={25} />
             </button>
             <div className="text-xl flex-1 ml-2">{runningProcess ? runningProcess.module : 'Select a Module'}</div>
-=======
-            <div className="text-xl flex-1 ml-2 font-bold text-white breadcrumbs">
-                <ul>
-                    <li><Link to="/">Trailhead</Link></li>
-                    <li>{runningProcess ? runningProcess.module : 'Select a Module'}</li>
-                </ul>
-            </div>
->>>>>>> 48c2d26 (Intermediate commit)
         </div>
         <div className="flex">
             <div className={`flex-none ${!showFiles && 'hidden'}`}>
