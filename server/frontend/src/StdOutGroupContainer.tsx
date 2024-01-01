@@ -30,7 +30,7 @@ export function StdOutGroupContainer(props: PropsWithChildren<StdOutProps>) {
                         {
                             isOpen
                                 ? <>Hide lower <strong>{lines.length - 4}</strong> lines</>
-                                : <><strong>{lines.length - 4}</strong> additional lines hidden</>
+                                : <><strong>...{lines.length - 4}</strong> additional lines hidden...</>
                         }
                     </p>
                     {isOpen && lines.slice(2, lines.length - 2).map(stdOutLine)}

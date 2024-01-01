@@ -7,6 +7,7 @@ export enum PyProcessState {
 export interface PyProcess {
     state: PyProcessState;
     module: string;
+    path: string;
     requestId: number;
     pid?: number;
 }

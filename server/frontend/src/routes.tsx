@@ -1,6 +1,6 @@
 import App from "./App";
 
-import { LoaderFunctionArgs, createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { PyModule } from "./PyModule";
 
 function moduleLoader({ params }: any) {
@@ -13,7 +13,7 @@ const router = createBrowserRouter([
         element: <App />,
         children: [
             {
-                path: "run/:moduleName",
+                path: "module/:moduleName/run",
                 element: <PyModule />,
                 loader: moduleLoader
             }

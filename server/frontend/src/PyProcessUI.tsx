@@ -16,6 +16,11 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
     const [stdio, setStdIO] = useState<StdIO[]>([]);
     const [stdinValue, setStdinValue] = useState<string>("");
 
+    const runAgain = () => {
+        sendJsonMessage({ type: "RUN", data: { module: props.pyProcess.module, request_id: props.pyProcess.requestId } });
+        setStdIO([]);
+    };
+
     useEffect(() => {
         let message = parseJsonMessage(lastMessage);
         if (message) {
@@ -56,12 +61,25 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
                         setStdIO((prev) => prev.concat({ type: 'stderr', line: message?.data.data }))
                     }
                     break;
+                case 'INSPECT':
+                    console.log(message);
+                    break;
+                case 'file_modified':
+                    let module = message.data.path.replace(/^\.\//, '').replace(/\//g, '.').replace('.py', '');
+                    console.log(module, props.pyProcess);
+                    if (module === props.pyProcess.module) {
+                        if (pyProcess.state !== PyProcessState.EXITED && pyProcess.pid) {
+                            sendJsonMessage({ type: "KILL", data: { pid: pyProcess.pid } })
+                        }
+                        runAgain()
+                    }
                 case 'EXIT':
                     if (message.data.pid === pyProcess.pid) {
                         setPyProcess(prev => {
                             prev.state = PyProcessState.EXITED;
                             return prev;
-                        })
+                        });
+                        sendJsonMessage({ type: "INSPECT", data: { path: props.pyProcess.path } });
                     }
                     break;
             }
@@ -78,15 +96,19 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
     }, [pyProcess])
 
     let status: string;
+    let statusBadgeClass: string = "badge ";
     switch (pyProcess.state) {
         case PyProcessState.STARTING:
             status = 'Starting...';
+            statusBadgeClass += 'badge-secondary';
             break;
         case PyProcessState.RUNNING:
             status = 'Running';
+            statusBadgeClass += 'badge-primary';
             break;
         case PyProcessState.EXITED:
             status = 'Completed';
+            statusBadgeClass += 'badge-neutral badge-outline';
             break;
     }
 
@@ -116,26 +138,48 @@ export function PyProcessUI(props: PropsWithChildren<PyProcessUIProps>) {
         });
     }, [stdinValue]);
 
-    return <div className="prose">
-        <h3>{status}</h3>
-        {stdio.map((line, idx) => {
-            switch (line.type) {
-                case 'stdin':
-                    if (line.response === undefined) {
-                        return <p key={idx}>{line.prompt}<br />
-                            <input onChange={handleStdInChange} onKeyUp={(e) => { if (e.key === 'Enter') { handleStdInSend(idx, line); } }} value={stdinValue} autoFocus={true} type="text" className="input input-bordered w-full max-w-xs"></input>
-                            <button onClick={() => handleStdInSend(idx, line)} className="btn btn-primary ml-4">Send</button>
-                        </p>
-                    } else {
-                        return <p key={idx}>{line.prompt}<br />
-                            <input autoFocus={true} type="text" className="input input-bordered w-full max-w-xs" value={line.response} disabled={true}></input>
-                        </p>
-                    }
-                case 'stderr':
-                    return <StdErrMessage key={idx} line={line.line} />;
-                case 'stdout_group':
-                    return <StdOutGroupContainer key={idx} group={line} minGroupSize={10} groupAfterRatePerSecond={10} />
-            }
-        })}
+    let runAgainButton: React.ReactElement | undefined;
+    if (status === 'Completed') {
+        runAgainButton = <button onClick={runAgain} className="btn btn-primary ml-6">Run Again</button>;
+    }
+
+    return <div role="tablist" className="tabs tabs-lifted tabs-lg">
+        <input type="radio" name="module_tabs" role="tab" className="tab" aria-label="Run" defaultChecked={true} />
+        <div role="tabpanel" className="tab-content prose prose-lg border-base-300 rounded-box p-6">
+            <div>
+                <div className={statusBadgeClass}>{status}</div>
+                {runAgainButton}
+            </div>
+            <div className="divider"></div>
+            {stdio.map((line, idx) => {
+                switch (line.type) {
+                    case 'stdin':
+                        if (line.response === undefined) {
+                            return <p key={idx}>{line.prompt}<br />
+                                <input onChange={handleStdInChange} onKeyUp={(e) => { if (e.key === 'Enter') { handleStdInSend(idx, line); } }} value={stdinValue} autoFocus={true} type="text" className="input input-bordered bg-info w-full max-w-xs"></input>
+                                <button onClick={() => handleStdInSend(idx, line)} className="btn btn-primary ml-4">Send</button>
+                            </p>
+                        } else {
+                            return <p key={idx}>{line.prompt}<br />
+                                <input autoFocus={true} type="text" className="input input-bordered w-full max-w-xs" value={line.response} disabled={true}></input>
+                            </p>
+                        }
+                    case 'stderr':
+                        return <StdErrMessage key={idx} line={line.line} />;
+                    case 'stdout_group':
+                        return <StdOutGroupContainer key={idx} group={line} minGroupSize={10} groupAfterRatePerSecond={10} />
+                }
+            })}
+        </div>
+
+        <input type="radio" name="module_tabs" role="tab" className="tab" aria-label="Tinker" />
+        <div role="tabpanel" className="tab-content prose prose-lg border-base-300 rounded-box p-6">
+            <p>Inspect</p>
+        </div>
+
+        <input type="radio" name="module_tabs" role="tab" className="tab" aria-label="Test" />
+        <div role="tabpanel" className="tab-content prose prose-lg border-base-300 rounded-box p-6">
+            <p>Test</p>
+        </div>
     </div>;
 }

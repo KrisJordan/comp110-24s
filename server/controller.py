@@ -3,6 +3,7 @@ from fastapi import WebSocket
 from server.web_socket_event import WebSocketEvent
 from .async_python_subprocess import AsyncPythonSubprocess
 from .models import NamespaceTree, Module, Package
+from .analysis.inspect import analyze_module
 
 subprocesses: dict[int, AsyncPythonSubprocess] = {}
 
@@ -35,6 +36,11 @@ async def web_socket_controller(client: WebSocket, event: WebSocketEvent):
                 if process:
                     process.write(event.data["data"])
             return
+        case "INSPECT":
+            path = event.data["path"]
+            response = WebSocketEvent(
+                type="INSPECT", data=analyze_module(path).model_dump()
+            )
         case _:
             response = WebSocketEvent(type="??", data={})
 

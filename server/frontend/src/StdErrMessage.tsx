@@ -54,7 +54,7 @@ export function StdErrMessage(props: React.PropsWithChildren<StdErrProps>) {
                 <input type="checkbox" />
                 <div className="collapse-title font-bold text-secondary">
                     {frame.name.replace('<module>', 'Globals')}
-                    <span className="font-light text-white italic pl-2 opacity-40">{frame.filename} line {frame.lineno}</span>
+                    <span className="font-light text-secondary italic pl-2">{frame.filename} line {frame.lineno}</span>
                 </div>
                 <div className="collapse-content">
                     <pre>
