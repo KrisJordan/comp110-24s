@@ -1,8 +1,7 @@
 {
-    "image": "krisjordan/trailhead:0.0.3",
+    "image": "krisjordan/trailhead:0.0.4",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
     "workspaceFolder": "/workspace",
-    "postCreateCommand": "pip3 install -r requirements.txt",
     "remoteUser": "vscode",
     "forwardPorts": [
         1100,
