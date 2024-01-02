@@ -1,11 +1,12 @@
 # Python Code Formatter
-black >=23.10.1, <23.11.0
+black >=23.12.1, <23.13.0
 
 # Static Type Checking
 mypy >=1.7.0, <1.8.0
 
 # Python Unit Test
-pytest >=7.4.3, <7.5.0
+pytest >=7.4.4, <7.5.0
+pytest-json-report >=1.5.0, <1.6.0
 
 # Image Libraries for gifs
 svgwrite >=1.4.3, <1.5.0
@@ -13,20 +14,15 @@ cairosvg >=2.7.1, <2.8.0
 pillow >=10.1.0, <10.2.0
 
 # FasAPI
-fastapi >=0.104.1, <0.105.0
+fastapi >=0.108.0, <0.109.0
 uvicorn[standard] >=0.25.0, <0.26.0
-
-# Kubernetes / CloudApps
-blinker >=1.7.0, <1.8.0
-kubernetes >=28.1.0, <28.2.0
-kubernetes-stubs >=22.6.0, <28.2.0
 
 # COMP110 System Tooling
 watchdog >=3.0.0, <3.1.0
 aiofiles >=23.2.1, <23.3.0
 
 # Data Science
-ipykernel >=6.27.1, <6.28.0
+ipykernel >=6.28.0, <6.29.0
 numpy >=1.26.2, <1.27.0
 pandas >=2.1.4, <2.2.0
 matplotlib >=3.8.2, <3.9.0
