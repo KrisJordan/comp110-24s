@@ -1,10 +1,12 @@
 {
-    "dockerComposeFile": "docker-compose.yml",
+    "image": "krisjordan/trailhead:0.0.3",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
     "workspaceFolder": "/workspace",
-    "service": "comp110devcontainer",
+    "postCreateCommand": "pip3 install -r requirements.txt",
     "remoteUser": "vscode",
     "forwardPorts": [
-        1100
+        1100,
+        8000
     ],
     "customizations": {
         "vscode": {
@@ -16,11 +18,12 @@
                 "ms-toolsai.jupyter"
             ],
             "settings": {
+                "files.autoSave": "onWindowChange",
                 "editor.formatOnSave": true,
                 "editor.formatOnSaveMode": "file",
                 "[python]": {
                     "editor.defaultFormatter": "ms-python.black-formatter",
-                    "editor.formatOnSave": true,
+                    "editor.formatOnSave": true
                 },
                 "python.defaultInterpreterPath": "/usr/bin/python3",
                 "python.testing.pytestEnabled": true,
